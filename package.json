@@ -4,6 +4,7 @@
   "type": "module",
   "scripts": {
     "dev": "vc dev",
+    "build": "echo \"No build step required\"",
     "deploy": "vc deploy --prod"
   },
   "dependencies": {
