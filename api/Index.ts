@@ -1,27 +1,28 @@
-export const config = {
-  runtime: 'edge',
-};
 
-import { Hono } from "hono";
-import { handle } from 'hono/vercel';
-import tmdbScrape from "../src/vidsrc";
+import { VercelRequest, VercelResponse } from '@vercel/node';
+import tmdbScrape from 'vidsrc.ts';
 
-const app = new Hono()
+export default async function handler(req: VercelRequest, res: VercelResponse) {
+    try {
+        // URL से TMDB ID निकालें
+        const { id } = req.query;
+        const tmdbId = id || req.url?.replace('/', '');
 
-app.get('/', (c) => {
-  return c.json({ message: "Congrats! Api working :)" })
-})
+        if (!tmdbId) {
+            return res.status(400).json({ error: 'TMDB ID डालें, जैसे: /1505305' });
+        }
 
-app.get("/:id/:ss?/:ep?", async (c) => {
-  const { id, ss, ep } = c.req.param();
-  const results = (!ss && !ep) ? await tmdbScrape(id, "movie") : await tmdbScrape(id, "tv", Number(ss), Number(ep));
-  return c.json(results);
-});
+        // vidsrc से स्ट्रीम निकालें
+        const data = await tmdbScrape(tmdbId.toString(), 'movie');
+        res.status(200).json(data);
 
-const handler = handle(app);
-
-export const GET = handler;
-export const POST = handler;
-export const PATCH = handler;
-export const PUT = handler;
-export const OPTIONS = handler;
+    } catch (error: any) {
+        // असली एरर को JSON में भेजें
+        console.error('Scraper Error:', error.message);
+        res.status(500).json({ 
+            success: false,
+            error: 'स्ट्रीम लिंक नहीं मिल पाया', 
+            details: error.message 
+        });
+    }
+}
